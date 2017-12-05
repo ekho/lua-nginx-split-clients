@@ -35,6 +35,11 @@ local function prepare_nodes(_nodes)
         table.insert(cumulative_weights, total_weight)
     end
 
+    -- normalize cumulative weights to range 0..crc32_max
+    for k,v in ipairs(cumulative_weights) do
+        cumulative_weights[k] = v / total_weight * crc32_max
+    end
+
     return nodes, ids, cumulative_weights
 end
 
@@ -79,11 +84,9 @@ end
 ---@return string
 local weighted_select = function(token, ids, cumulative_weights)
     local token_crc32 = ngx.crc32_short(token)
-    local total_weight = cumulative_weights[#cumulative_weights]
-    local val_norm = token_crc32 / crc32_max
 
     for i, cw in ipairs(cumulative_weights) do
-        if cw / total_weight > val_norm then
+        if cw > token_crc32 then
             return ids[i]
         end
     end
